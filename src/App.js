@@ -11,7 +11,7 @@ function Square({ value, onSquareClick }) {
 function Board({ xIsNext, squares, status, onPlay }) {
   
   function handleClick(i) {
-    if (squares[i] || calculateWinner(squares[i])) {
+    if (calculateWinner(squares) || squares[i]) {
       return;
     }
 
@@ -51,24 +51,25 @@ function Board({ xIsNext, squares, status, onPlay }) {
 }
 
 export default function Game() {
-  const [xIsNext, setXIsNext] = useState(true);
   const [history, setHistory] = useState([Array(9).fill(null)]);
   const [status, setStatus] = useState('');
   const [currentMove, setCurrentMove] = useState(0);
+  const xIsNext = currentMove % 2 === 0;
   const currentSquares = history[currentMove];
 
   function handlePlay(nextSquares, gameStatus) {
     const nextHistory = [...history.slice(0, currentMove + 1), nextSquares]
     setHistory(nextHistory);
     setCurrentMove(nextHistory.length - 1);
-    setXIsNext(!xIsNext);
     setStatus(gameStatus);
   }
 
   function jumpTo(nextMove, gameStatus) {
     setCurrentMove(nextMove);
-    setXIsNext(nextMove % 2 === 0);
-    setStatus(gameStatus);
+    const xNext = nextMove % 2 === 0;
+    const nextSquares = history[nextMove];
+    const newStatus = getGameStatus(nextSquares, !xNext);
+    setStatus(newStatus);
   }
 
   const moves = history.map((squares, move) => {
@@ -102,12 +103,20 @@ export default function Game() {
   );
 }
 
+function getBoardIsFull(nextSquares) {
+  return !(nextSquares.some(value => !value));
+}
+
 function getGameStatus(nextSquares, xIsNext) {
   let gameStatus = '';
   const winner = calculateWinner(nextSquares);
+  let full = false;
 
   if (winner) {
     gameStatus = "Winner: " + winner;
+  }
+  else if (getBoardIsFull(nextSquares)) { // Determine of board is full
+    gameStatus = "Draw";
   }
   else {
     gameStatus = "Next player: " + (!xIsNext ? "X" : "0");
