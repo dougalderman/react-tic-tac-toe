@@ -23,17 +23,9 @@ function Board({ xIsNext, squares, status, onPlay }) {
       nextSquares[i] = "O";
     }
 
-    let gameStatus = '';
-    const winner = calculateWinner(nextSquares);
+    const newStatus = getGameStatus(nextSquares, xIsNext);
 
-    if (winner) {
-      gameStatus = "Winner: " + winner;
-    }
-    else {
-      gameStatus = "Next player: " + (!xIsNext ? "X" : "0");
-    }
-
-    onPlay(nextSquares, gameStatus);
+    onPlay(nextSquares, newStatus);
   }
 
   return (
@@ -61,14 +53,42 @@ function Board({ xIsNext, squares, status, onPlay }) {
 export default function Game() {
   const [xIsNext, setXIsNext] = useState(true);
   const [history, setHistory] = useState([Array(9).fill(null)]);
-  const [status, setStatus] = useState('')
-  const currentSquares = history[history.length - 1];
+  const [status, setStatus] = useState('');
+  const [currentMove, setCurrentMove] = useState(0);
+  const currentSquares = history[currentMove];
 
   function handlePlay(nextSquares, gameStatus) {
-    setHistory([...history, nextSquares]);
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares]
+    setHistory(nextHistory);
+    setCurrentMove(nextHistory.length - 1);
     setXIsNext(!xIsNext);
     setStatus(gameStatus);
   }
+
+  function jumpTo(nextMove, gameStatus) {
+    setCurrentMove(nextMove);
+    setXIsNext(nextMove % 2 === 0);
+    setStatus(gameStatus);
+  }
+
+  const moves = history.map((squares, move) => {
+    let description;
+
+    if (move > 0) {
+      description = 'Go to move #' + move;
+    }
+    else {
+      description = 'Go to game start';
+    }
+
+    return (
+      <li key={move}>
+        <button onClick={() => jumpTo(move, status)}>
+          {description}
+        </button>
+      </li>
+    );
+  });
 
   return (
     <div className = "game">
@@ -76,10 +96,24 @@ export default function Game() {
         <Board xIsNext={xIsNext} squares={currentSquares} status={status} onPlay={handlePlay} />
       </div>
       <div className = "game-info">
-        <ol>/* TODO */</ol>
+        <ol>{moves}</ol>
       </div>
-      </div>  
-  )
+    </div>  
+  );
+}
+
+function getGameStatus(nextSquares, xIsNext) {
+  let gameStatus = '';
+  const winner = calculateWinner(nextSquares);
+
+  if (winner) {
+    gameStatus = "Winner: " + winner;
+  }
+  else {
+    gameStatus = "Next player: " + (!xIsNext ? "X" : "0");
+  }
+
+  return gameStatus;
 }
 
 function calculateWinner(squares) {
